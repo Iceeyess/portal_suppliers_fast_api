@@ -1,11 +1,12 @@
 from dotenv import load_dotenv
 from fastapi import FastAPI
 import oracledb, os, pathlib, uvicorn
-from CONSTANTS import PATH_LIB, PARAMETERS
+from fastapi.params import Depends
+from CONSTANTS import PATH_LIB
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from serializers import DateValidation
 from services import re_format_cycle
-from typing import Annotated
 
 
 dot_env = os.path.join(pathlib.Path().resolve(), '.env')
@@ -14,9 +15,10 @@ app = FastAPI()
 
 
 @app.get("/invoices-classified-by-date")
-def get_invoices_classified_by_date(unique_partner_identifier, date_from, date_to, invoice_status):
+def get_invoices_classified_by_date(unique_partner_identifier: int, invoice_status: str, date: DateValidation = Depends()):
     oracledb.init_oracle_client(lib_dir=PATH_LIB)
-    conn = oracledb.connect(user=os.getenv('USER'), password=os.getenv('PASSWORD'), host=os.getenv('HOST'), port=os.getenv('PORT'), service_name=os.getenv('SERVICE_NAME'))
+    conn = oracledb.connect(user=os.getenv('USER'), password=os.getenv('PASSWORD'), host=os.getenv('HOST'),
+                            port=os.getenv('PORT'), service_name=os.getenv('SERVICE_NAME'))
     cur = conn.cursor()
     request = f"""
     -----------------------------------
@@ -62,7 +64,7 @@ def get_invoices_classified_by_date(unique_partner_identifier, date_from, date_t
     and ps.invoice_id = i.invoice_id
     AND a.invoice_id(+) = i.invoice_id
     and   v.org_id IN (82, 224) 
-    and   a.PLANNED_DATE between TO_DATE('{date_from}','YYYY-MM-DD') and TO_DATE('{date_to}', 'YYYY-MM-DD') -- Внешний параметh Front END (даты)
+    and   a.PLANNED_DATE between TO_DATE('{date.date_from}','YYYY-MM-DD') and TO_DATE('{date.date_to}', 'YYYY-MM-DD') -- Внешний параметh Front END (даты)
     AND   v.uniquePartnerIdentifier = '{unique_partner_identifier}'  -- параметр соответствия между порталом и OEBS. PCS - uniquePartnerIdentifier
     AND EXISTS (select '1' from ap.ap_holds_all h
          where h.invoice_id = i.invoice_id
@@ -84,9 +86,10 @@ def get_invoices_classified_by_date(unique_partner_identifier, date_from, date_t
 
 
 @app.get("/search-by-invoice")
-def get_search_by_invoice(unique_partner_identifier, num,  check_num):
+def get_search_by_invoice(unique_partner_identifier, num, check_num):
     oracledb.init_oracle_client(lib_dir=PATH_LIB)
-    conn = oracledb.connect(user=os.getenv('USER'), password=os.getenv('PASSWORD'), host=os.getenv('HOST'), port=os.getenv('PORT'), service_name=os.getenv('SERVICE_NAME'))
+    conn = oracledb.connect(user=os.getenv('USER'), password=os.getenv('PASSWORD'), host=os.getenv('HOST'),
+                            port=os.getenv('PORT'), service_name=os.getenv('SERVICE_NAME'))
     cur = conn.cursor()
     request = f"""
     -----------------------------------
@@ -156,10 +159,12 @@ def get_search_by_invoice(unique_partner_identifier, num,  check_num):
     results = jsonable_encoder(results)
     return JSONResponse(content=results)
 
+
 @app.get("/paid-invoices")
-def get_paid_invoices(unique_partner_identifier, date_from, date_to):
+def get_paid_invoices(unique_partner_identifier, date: DateValidation = Depends()):
     oracledb.init_oracle_client(lib_dir=PATH_LIB)
-    conn = oracledb.connect(user=os.getenv('USER'), password=os.getenv('PASSWORD'), host=os.getenv('HOST'), port=os.getenv('PORT'), service_name=os.getenv('SERVICE_NAME'))
+    conn = oracledb.connect(user=os.getenv('USER'), password=os.getenv('PASSWORD'), host=os.getenv('HOST'),
+                            port=os.getenv('PORT'), service_name=os.getenv('SERVICE_NAME'))
     cur = conn.cursor()
     request = f"""
     -----------------------------------
@@ -204,7 +209,7 @@ def get_paid_invoices(unique_partner_identifier, date_from, date_to):
     AND ps.invoice_id = i.invoice_id
     AND a.invoice_id = i.invoice_id
     AND   v.org_id IN (82, 224) 
-    AND   a.PLANNED_DATE between to_date('{date_from}','YYYY-MM-DD') and to_date('{date_to}','YYYY-MM-DD') -- Внешний параметh Front END (даты)
+    AND   a.PLANNED_DATE between to_date('{date.date_from}','YYYY-MM-DD') and to_date('{date.date_to}','YYYY-MM-DD') -- Внешний параметh Front END (даты)
     AND   v.uniquePartnerIdentifier = {unique_partner_identifier}  -- параметр соответствия между порталом и OEBS. PCS - uniquePartnerIdentifier
     AND a.status IN ('PAYMENT_CREATED')
     """
@@ -215,10 +220,12 @@ def get_paid_invoices(unique_partner_identifier, date_from, date_to):
     results = jsonable_encoder(results)
     return JSONResponse(content=results)
 
+
 @app.get("/invoices-confirmed-for-payment")
-def get_invoices_confirmed_for_payment(unique_partner_identifier, date_from, date_to):
+def get_invoices_confirmed_for_payment(unique_partner_identifier, date: DateValidation = Depends()):
     oracledb.init_oracle_client(lib_dir=PATH_LIB)
-    conn = oracledb.connect(user=os.getenv('USER'), password=os.getenv('PASSWORD'), host=os.getenv('HOST'), port=os.getenv('PORT'), service_name=os.getenv('SERVICE_NAME'))
+    conn = oracledb.connect(user=os.getenv('USER'), password=os.getenv('PASSWORD'), host=os.getenv('HOST'),
+                            port=os.getenv('PORT'), service_name=os.getenv('SERVICE_NAME'))
     cur = conn.cursor()
     request = f"""
     -----------------------------------
@@ -263,7 +270,7 @@ def get_invoices_confirmed_for_payment(unique_partner_identifier, date_from, dat
     and ps.invoice_id = i.invoice_id
     AND a.invoice_id(+) = i.invoice_id
     and   v.org_id IN (82, 224)  
-    and   a.PLANNED_DATE between to_date('{date_from}','YYYY-MM-DD') and to_date('{date_to}','YYYY-MM-DD') -- Внешний параметр Front END (даты)
+    and   a.PLANNED_DATE between to_date('{date.date_from}','YYYY-MM-DD') and to_date('{date.date_to}','YYYY-MM-DD') -- Внешний параметр Front END (даты)
     AND   v.uniquePartnerIdentifier = {unique_partner_identifier}  -- параметр соответствия между порталом и OEBS. PCS - uniquePartnerIdentifier
     AND nvl(i.PAYMENT_STATUS_FLAG, 'N') != 'Y'
     """
