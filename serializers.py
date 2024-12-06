@@ -42,7 +42,8 @@ class DataValidation(BaseModel):
     unique_partner_identifier: str
 
 
-    @root_validator(pre=True)
+    @model_validator(mode='before')
+    @classmethod
     def validate_data(cls, values):
         ###############################################################################################################
         ## date validations
