@@ -5,7 +5,7 @@ from fastapi.params import Depends
 from CONSTANTS import PATH_LIB
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-from serializers import DateValidation
+from serializers import DataValidation
 from services import re_format_cycle
 
 
@@ -15,7 +15,7 @@ app = FastAPI()
 
 
 @app.get("/invoices-classified-by-date")
-def get_invoices_classified_by_date(unique_partner_identifier: int, invoice_status: str, date: DateValidation = Depends()):
+def get_invoices_classified_by_date(invoice_status: str, data: DataValidation = Depends()):
     oracledb.init_oracle_client(lib_dir=PATH_LIB)
     conn = oracledb.connect(user=os.getenv('USER'), password=os.getenv('PASSWORD'), host=os.getenv('HOST'),
                             port=os.getenv('PORT'), service_name=os.getenv('SERVICE_NAME'))
@@ -64,8 +64,8 @@ def get_invoices_classified_by_date(unique_partner_identifier: int, invoice_stat
     and ps.invoice_id = i.invoice_id
     AND a.invoice_id(+) = i.invoice_id
     and   v.org_id IN (82, 224) 
-    and   a.PLANNED_DATE between TO_DATE('{date.date_from}','YYYY-MM-DD') and TO_DATE('{date.date_to}', 'YYYY-MM-DD') -- Внешний параметh Front END (даты)
-    AND   v.uniquePartnerIdentifier = '{unique_partner_identifier}'  -- параметр соответствия между порталом и OEBS. PCS - uniquePartnerIdentifier
+    and   a.PLANNED_DATE between TO_DATE('{data.date_from}','YYYY-MM-DD') and TO_DATE('{data.date_to}', 'YYYY-MM-DD') -- Внешний параметh Front END (даты)
+    AND   v.uniquePartnerIdentifier = '{data.unique_partner_identifier}'  -- параметр соответствия между порталом и OEBS. PCS - uniquePartnerIdentifier
     AND EXISTS (select '1' from ap.ap_holds_all h
          where h.invoice_id = i.invoice_id
          and   h.release_lookup_code IS null
@@ -161,7 +161,7 @@ def get_search_by_invoice(unique_partner_identifier, num, check_num):
 
 
 @app.get("/paid-invoices")
-def get_paid_invoices(unique_partner_identifier, date: DateValidation = Depends()):
+def get_paid_invoices(data: DataValidation = Depends()):
     oracledb.init_oracle_client(lib_dir=PATH_LIB)
     conn = oracledb.connect(user=os.getenv('USER'), password=os.getenv('PASSWORD'), host=os.getenv('HOST'),
                             port=os.getenv('PORT'), service_name=os.getenv('SERVICE_NAME'))
@@ -209,9 +209,9 @@ def get_paid_invoices(unique_partner_identifier, date: DateValidation = Depends(
     AND ps.invoice_id = i.invoice_id
     AND a.invoice_id = i.invoice_id
     AND   v.org_id IN (82, 224) 
-    AND   a.PLANNED_DATE between to_date('{date.date_from}','YYYY-MM-DD') and to_date('{date.date_to}','YYYY-MM-DD') -- Внешний параметh Front END (даты)
-    AND   v.uniquePartnerIdentifier = {unique_partner_identifier}  -- параметр соответствия между порталом и OEBS. PCS - uniquePartnerIdentifier
-    AND a.status IN ('PAYMENT_CREATED')
+    AND   a.PLANNED_DATE between to_date('{data.date_from}','YYYY-MM-DD') and to_date('{data.date_to}','YYYY-MM-DD') -- Внешний параметh Front END (даты)
+    AND   v.uniquePartnerIdentifier = {data.unique_partner_identifier}  -- параметр соответствия между порталом и OEBS. PCS - uniquePartnerIdentifier
+    AND   a.status IN ('PAYMENT_CREATED')
     """
     cur.execute(request)
     results = cur.fetchall()
@@ -222,7 +222,7 @@ def get_paid_invoices(unique_partner_identifier, date: DateValidation = Depends(
 
 
 @app.get("/invoices-confirmed-for-payment")
-def get_invoices_confirmed_for_payment(unique_partner_identifier, date: DateValidation = Depends()):
+def get_invoices_confirmed_for_payment(data: DataValidation = Depends()):
     oracledb.init_oracle_client(lib_dir=PATH_LIB)
     conn = oracledb.connect(user=os.getenv('USER'), password=os.getenv('PASSWORD'), host=os.getenv('HOST'),
                             port=os.getenv('PORT'), service_name=os.getenv('SERVICE_NAME'))
@@ -270,8 +270,8 @@ def get_invoices_confirmed_for_payment(unique_partner_identifier, date: DateVali
     and ps.invoice_id = i.invoice_id
     AND a.invoice_id(+) = i.invoice_id
     and   v.org_id IN (82, 224)  
-    and   a.PLANNED_DATE between to_date('{date.date_from}','YYYY-MM-DD') and to_date('{date.date_to}','YYYY-MM-DD') -- Внешний параметр Front END (даты)
-    AND   v.uniquePartnerIdentifier = {unique_partner_identifier}  -- параметр соответствия между порталом и OEBS. PCS - uniquePartnerIdentifier
+    and   a.PLANNED_DATE between to_date('{data.date_from}','YYYY-MM-DD') and to_date('{data.date_to}','YYYY-MM-DD') -- Внешний параметр Front END (даты)
+    AND   v.uniquePartnerIdentifier = {data.unique_partner_identifier}  -- параметр соответствия между порталом и OEBS. PCS - uniquePartnerIdentifier
     AND nvl(i.PAYMENT_STATUS_FLAG, 'N') != 'Y'
     """
     cur.execute(request)

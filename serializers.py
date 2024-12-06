@@ -1,6 +1,6 @@
 import datetime
 
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, root_validator, model_validator
 from fastapi import responses, HTTPException
 from fastapi import status
 
@@ -36,13 +36,19 @@ class ResponseInvoices(BaseModel):
     factualReqNum: str
     invoiceStatus: str
 
-class DateValidation(BaseModel):
+class DataValidation(BaseModel):
     date_from: str
     date_to: str
+    unique_partner_identifier: str
+
 
     @root_validator(pre=True)
-    def validate_dates(cls, values):
-        date_from, date_to = values.get("date_from"), values.get("date_to")
+    def validate_data(cls, values):
+        ###############################################################################################################
+        ## date validations
+        ###############################################################################################################
+        date_from, date_to, unique_partner_identifier = (values.get("date_from"), values.get("date_to"),
+                                                         values.get("unique_partner_identifier"))
         if date_from and date_to and date_from > date_to:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -59,5 +65,12 @@ class DateValidation(BaseModel):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail='Даты должны быть в формате YYYY-MM-DD')
-
+        ################################################################################################################
+        ## unique_partner_identifier validations
+        ################################################################################################################
+        if len(unique_partner_identifier) != 8 or any([True for _ in unique_partner_identifier if not _.isdigit()]):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Номер unique_partner_identifier должен быть равен 8-знакам и состоять только из цифр"
+            )
         return values
