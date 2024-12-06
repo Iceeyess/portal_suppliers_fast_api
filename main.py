@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 import oracledb, os, pathlib, uvicorn
 from fastapi.params import Depends
-from CONSTANTS import PATH_LIB
+from constants import PATH_LIB
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from serializers import DataValidation
