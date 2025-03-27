@@ -3,6 +3,8 @@ from serializers import ResponseInvoices, ResponseSearchByInvoice
 
 
 def re_format_cycle(obj):
+    """After reading database query this function formats data to the correct types depends on the
+    number of columns of the queries"""
     try:
         if len(obj[0]) == 11:
             for index in range(len(obj)):
